@@ -32,13 +32,50 @@ class Game:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     self.running = False
-
             self.screen.fill((255, 255, 255))
             pygame.display.flip()
             self.clock.tick(60)
 
     def quit(self):
         pygame.quit()
+
+
+class Player:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+        self.width = 20
+        self.height = 20
+        self.color = (100, 255, 10)
+
+    def draw(self, screen):
+        pygame.draw.rect(screen, self.color, (self.x, self.y, self.width, self.height))
+
+    def move(self, dx, dy, obstacles):
+        new_x = self.x + dx
+        new_y = self.y + dy
+        if not self.collides_with_obstacles(new_x, new_y, obstacles):
+            self.x = new_x
+            self.y = new_y
+
+    def collides_with_obstacles(self, x, y, obstacles):
+        for obstacle in obstacles:
+            if (x < obstacle[0] + obstacle[2] and x + self.width > obstacle[0]
+                    and y < obstacle[1] + obstacle[3] and y + self.height > obstacle[1]):
+                return True
+        return False
+
+    def bot_move(self, hero):
+        dx = hero.x - self.x
+        dy = hero.y - self.y
+        angle = math.atan2(dy, dx)
+        speed = 2
+        dx = math.cos(angle) * speed
+        dy = math.sin(angle) * speed
+        self.move(dx, dy, game.obstacles)
+
+    def bot_shoot(self, hero):
+        pass
 
 
 class Hero:
@@ -49,13 +86,11 @@ class Hero:
         self.height = 20
         self.color = (100, 100, 100)
         self.bullets = []
+        self.shoot_cooldown = 5
+        self.last_shot_time = 0
 
     def draw(self, screen):
         pygame.draw.rect(screen, self.color, (self.x, self.y, self.width, self.height))
-
-    def move(self, dx, dy):
-        self.x += dx
-        self.y += dy
 
     def check_collision(self, obstacles, dx, dy):
         for obstacle in obstacles:
@@ -76,7 +111,7 @@ class Hero:
         pass
 
     def shoot(self, mouse_x, mouse_y):
-        bullet_speed = 5
+        bullet_speed = 8
         angle = math.atan2(mouse_y - (self.y + self.height // 2), mouse_x - (self.x + self.width // 2))
         bullet_dx = math.cos(angle) * bullet_speed
         bullet_dy = math.sin(angle) * bullet_speed
@@ -91,6 +126,15 @@ class Hero:
         for bullet in self.bullets:
             bullet.update()
             bullet.draw(game.screen)
+
+    # def bot_move(self, obstacles, player):
+    #     dx = player.x - self.x
+    #     dy = player.y - self.y
+    #     angle = math.atan2(dy, dx)
+    #     speed = 2
+    #     dx = math.cos(angle) * speed
+    #     dy = math.sin(angle) * speed
+    #     self.move(dx, dy, obstacles)
 
 
 class Bullet:
@@ -114,7 +158,12 @@ class Bullet:
 if __name__ == "__main__":
     game = Game()
     game.init()
+    pygame.init()
+    player = Player(10, 10)
     hero = Hero(400, 300)
+    screen_width = 800
+    screen_height = 600
+    game_screen = pygame.display.set_mode((screen_width, screen_height))
     try:
         while game.running:
             for event in pygame.event.get():
@@ -122,6 +171,7 @@ if __name__ == "__main__":
                     game.running = False
 
             hero.rotate()
+            player.bot_move(hero)
 
             keys = pygame.key.get_pressed()
             if keys[pygame.K_LEFT]:
@@ -134,6 +184,12 @@ if __name__ == "__main__":
                 hero.move(0, 5, game.obstacles)
 
             game.screen.fill((255, 255, 255))
+            player.draw(game_screen)
+
+            hero.move(0, 0, game.obstacles)
+
+            hero.draw(game.screen)
+
             for obstacle in game.obstacles:
                 pygame.draw.rect(game.screen, (0, 0, 0),
                                  pygame.Rect(obstacle[0], obstacle[1], obstacle[2], obstacle[3]))
