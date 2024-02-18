@@ -1,11 +1,10 @@
-# from project_game.log import logger
-# logger.info()
+# # from project_game.log import logger
+# # logger.info()
 
 import math
 import time
 import pygame
 import random
-import sys
 
 
 class Game:
@@ -50,6 +49,7 @@ class Player:
         self.width = 20
         self.height = 20
         self.color = (100, 255, 10)
+        self.bullets = []
 
     def draw(self, screen):
         pygame.draw.rect(screen, self.color, (self.x, self.y, self.width, self.height))
@@ -77,8 +77,9 @@ class Player:
         dy = math.sin(angle) * speed
         self.move(dx, dy, game.obstacles)
 
-    def bot_shoot(self, hero):
-        pass
+    def shoot(self):
+        bullet = Bullet(self.x, self.y)
+        self.bullets.append(bullet)
 
 
 class Hero:
@@ -114,41 +115,19 @@ class Hero:
     def rotate(self):
         self.angle += 1
 
-    # def shoot(self, mouse_x, mouse_y):
-    #     bullet_speed = 8
-    #     angle = math.atan2(mouse_y - (self.y + self.height // 2), mouse_x - (self.x + self.width // 2))
-    #     bullet_dx = math.cos(angle) * bullet_speed
-    #     bullet_dy = math.sin(angle) * bullet_speed
-    #     bullet = Bullet(self.x + self.width // 2, self.y + self.height // 2, bullet_dx, bullet_dy, (255, 0, 0))
-    #     self.bullets.append(bullet)
-
-    # def update(self, mouse_x, mouse_y):
-    #     for event in pygame.event.get():
-    #         if event.type == pygame.MOUSEBUTTONDOWN:  # Check for mouse button press
-    #             if event.button == 1:  # Check for left mouse button press
-    #                 self.shoot(mouse_x, mouse_y)  # Fire a bullet
-    #     for bullet in self.bullets:
-    #         bullet.update()
-    #         bullet.draw(game.screen)
-
-    def update(self, mouse_x, mouse_y):
-        for event in pygame.event.get():
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                if event.button == 1:
-                    self.shoot(mouse_x, mouse_y)
-        for bullet in self.bullets:
-            bullet.update()
-            bullet.draw(game.screen)
-
-        for bullet in self.bullets:
-            if self.collides_with_hero(bullet):
-                self.game_running = False
-
     def collides_with_hero(self, bullet):
         if (bullet.x < hero.x + hero.width and
                 bullet.x + bullet.width > hero.x and
                 bullet.y < hero.y + hero.height and
                 bullet.y + bullet.height > hero.y):
+            return True
+        return False
+
+    def collides_with_player(self, bullet):
+        if (bullet.x < player.x + player.width and
+                bullet.x + bullet.width > player.x and
+                bullet.y < player.y + player.height and
+                bullet.y + bullet.height > player.y):
             return True
         return False
 
@@ -176,22 +155,6 @@ class Hero:
             if self.collides_with_player(bullet):
                 game.running = False
 
-    def collides_with_player(self, bullet):
-        if (bullet.x < player.x + player.width and
-                bullet.x + bullet.width > player.x and
-                bullet.y < player.y + player.height and
-                bullet.y + bullet.height > player.y):
-            return True
-        return False
-
-    def shoot(self, mouse_x, mouse_y):
-        bullet_speed = 8
-        angle = math.atan2(mouse_y - (self.y + self.height // 2), mouse_x - (self.x + self.width // 2))
-        bullet_dx = math.cos(angle) * bullet_speed
-        bullet_dy = math.sin(angle) * bullet_speed
-        bullet = Bullet(self.x + self.width // 2, self.y + self.height // 2, bullet_dx, bullet_dy, (255, 0, 0))
-        self.bullets.append(bullet)
-
 
 class Bullet:
     def __init__(self, x, y, dx, dy, color):
@@ -210,9 +173,15 @@ class Bullet:
 
     def draw(self, screen):
         pygame.draw.circle(screen, self.color, (int(self.x), int(self.y)), self.radius)
-    def move(self):
-        self.x += self.dx
-        self.y += self.dy
+
+    # def move(self):
+    #     self.x += self.dx
+    #     self.y += self.dy
+    #
+    # def check_collision(self, screen_width, screen_height):
+    #     if self.x < 0 or self.x > screen_width or self.y < 0 or self.y > screen_height:
+    #         return True
+    #     return False
 
 
 if __name__ == "__main__":
@@ -220,12 +189,11 @@ if __name__ == "__main__":
     game.init()
     pygame.init()
     player = Player(10, 10)
-    hero = Hero(400, 300)
+    hero = Hero(10, 500)
     screen_width = 800
     screen_height = 600
 
-    bullets = []
-    clock = pygame.time.Clock()
+    # clock = pygame.time.Clock()
 
     game_screen = pygame.display.set_mode((screen_width, screen_height))
     try:
@@ -247,6 +215,13 @@ if __name__ == "__main__":
             if keys[pygame.K_DOWN]:
                 hero.move(0, 5, game.obstacles)
 
+            # for bullet in player.bullets:
+            #     bullet.update()
+            #     bullet.draw(game.screen)
+            #
+            #     if bullet.check_collision(screen_width, screen_height):
+            #         player.bullets.remove(bullet)
+
             game.screen.fill((255, 255, 255))
             player.draw(game_screen)
 
@@ -258,8 +233,6 @@ if __name__ == "__main__":
                 pygame.draw.rect(game.screen, (0, 0, 0),
                                  pygame.Rect(obstacle[0], obstacle[1], obstacle[2], obstacle[3]))
 
-            hero.draw(game.screen)
-
             mouse_x, mouse_y = pygame.mouse.get_pos()
             hero.update(mouse_x, mouse_y)
 
@@ -268,4 +241,8 @@ if __name__ == "__main__":
 
     except KeyboardInterrupt:
         game.quit()
+
+
+
+
 
