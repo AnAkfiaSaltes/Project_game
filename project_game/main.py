@@ -38,6 +38,14 @@ class Game:
             pygame.display.flip()
             self.clock.tick(60)
 
+    def check_collision(self, player, hero):
+        if (player.x < hero.x + hero.width and
+                player.x + player.width > hero.x and
+                player.y < hero.y + hero.height and
+                player.y + player.height > hero.y):
+            return True
+        return False
+
     def quit(self):
         pygame.quit()
 
@@ -77,9 +85,17 @@ class Player:
         dy = math.sin(angle) * speed
         self.move(dx, dy, game.obstacles)
 
-    def shoot(self):
-        bullet = Bullet(self.x, self.y)
+    def shoot_at(self, target):
+        bullet_speed = 8
+        angle = math.atan2(target.y - (self.y + self.height // 2), target.x - (self.x + self.width // 2))
+        bullet_dx = math.cos(angle) * bullet_speed
+        bullet_dy = math.sin(angle) * bullet_speed
+        bullet = Bullet(self.x + self.width // 2, self.y + self.height // 2, bullet_dx, bullet_dy, (255, 0, 0))
         self.bullets.append(bullet)
+
+    def reset_position(self, x, y):
+        self.x = x
+        self.y = y
 
 
 class Hero:
@@ -153,7 +169,8 @@ class Hero:
 
         for bullet in self.bullets:
             if self.collides_with_player(bullet):
-                game.running = False
+                player.reset_position(10, 10)
+                self.bullets.remove(bullet)
 
 
 class Bullet:
@@ -177,11 +194,11 @@ class Bullet:
     # def move(self):
     #     self.x += self.dx
     #     self.y += self.dy
-    #
-    # def check_collision(self, screen_width, screen_height):
-    #     if self.x < 0 or self.x > screen_width or self.y < 0 or self.y > screen_height:
-    #         return True
-    #     return False
+
+    def check_collision(self, screen_width, screen_height):
+        if self.x < 0 or self.x > screen_width or self.y < 0 or self.y > screen_height:
+            return True
+        return False
 
 
 if __name__ == "__main__":
@@ -193,8 +210,6 @@ if __name__ == "__main__":
     screen_width = 800
     screen_height = 600
 
-    # clock = pygame.time.Clock()
-
     game_screen = pygame.display.set_mode((screen_width, screen_height))
     try:
         while game.running:
@@ -202,8 +217,13 @@ if __name__ == "__main__":
                 if event.type == pygame.QUIT:
                     game.running = False
 
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    if event.button == 1:
+                        player.shoot_at(hero)
+
             hero.rotate()
             player.bot_move(hero)
+            player.shoot_at(hero)
 
             keys = pygame.key.get_pressed()
             if keys[pygame.K_LEFT]:
@@ -235,6 +255,9 @@ if __name__ == "__main__":
 
             mouse_x, mouse_y = pygame.mouse.get_pos()
             hero.update(mouse_x, mouse_y)
+
+            if game.check_collision(player, hero):
+                game.running = False
 
             pygame.display.flip()
             game.clock.tick(60)
