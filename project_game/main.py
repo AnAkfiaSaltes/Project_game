@@ -7,6 +7,57 @@ import pygame
 import random
 
 
+class Menu:
+    def __init__(self):
+        self.players = []
+
+    def display_menu(self):
+        # Display menu options and buttons
+        register_button = pygame.Rect(50, 50, 200, 50)
+        game_button = pygame.Rect(50, 150, 200, 50)
+        statistics_button = pygame.Rect(50, 250, 200, 50)
+
+        pygame.draw.rect(game_screen, (0, 255, 0), register_button)
+        pygame.draw.rect(game_screen, (0, 255, 0), game_button)
+        pygame.draw.rect(game_screen, (0, 255, 0), statistics_button)
+
+        font = pygame.font.Font(None, 36)
+        text_register = font.render('Register', True, (255, 255, 255))
+        text_game = font.render('Game', True, (255, 255, 255))
+        text_statistics = font.render('Statistics', True, (255, 255, 255))
+
+        game_screen.blit(text_register, (register_button.x + 10, register_button.y + 10))
+        game_screen.blit(text_game, (game_button.x + 10, game_button.y + 10))
+        game_screen.blit(text_statistics, (statistics_button.x + 10, statistics_button.y + 10))
+
+        mouse_x, mouse_y = pygame.mouse.get_pos()
+
+        if register_button.collidepoint(mouse_x, mouse_y):
+            if pygame.mouse.get_pressed()[0]:
+                self.register_player()
+
+        if game_button.collidepoint(mouse_x, mouse_y):
+            if pygame.mouse.get_pressed()[0]:
+                game.run()
+
+        if statistics_button.collidepoint(mouse_x, mouse_y):
+            if pygame.mouse.get_pressed()[0]:
+                self.view_player_list()
+
+    def register_player(self):
+        player_name = input("Enter player name: ")
+        with open('player_names.txt', 'a') as file:
+            file.write(player_name + '\n')
+        print(f"Player {player_name} registered successfully!")
+
+    def view_player_list(self):
+        with open('player_names.txt', 'r') as file:
+            players = file.readlines()
+            print("List of registered players:")
+            for player in players:
+                print(player.strip())
+
+
 class Game:
 
     def init(self):
@@ -16,8 +67,10 @@ class Game:
         self.screen = pygame.display.set_mode((self.screen_width, self.screen_height))
         self.clock = pygame.time.Clock()
         self.obstacles = []
-
         self.running = True
+        self.collisions_count = 0
+
+
 
         for _ in range(18):
             obstacle_width = random.choice([4, 8]) * 10
@@ -170,6 +223,7 @@ class Hero:
         for bullet in self.bullets:
             if self.collides_with_player(bullet):
                 player.reset_position(10, 10)
+                game.collisions_count += 1
                 self.bullets.remove(bullet)
 
 
@@ -209,8 +263,8 @@ if __name__ == "__main__":
     hero = Hero(10, 500)
     screen_width = 800
     screen_height = 600
-
     game_screen = pygame.display.set_mode((screen_width, screen_height))
+    collisions_count = 0
     try:
         while game.running:
             for event in pygame.event.get():
@@ -223,7 +277,7 @@ if __name__ == "__main__":
 
             hero.rotate()
             player.bot_move(hero)
-            player.shoot_at(hero)
+            # player.shoot_at(hero)
 
             keys = pygame.key.get_pressed()
             if keys[pygame.K_LEFT]:
@@ -234,13 +288,6 @@ if __name__ == "__main__":
                 hero.move(0, -5, game.obstacles)
             if keys[pygame.K_DOWN]:
                 hero.move(0, 5, game.obstacles)
-
-            # for bullet in player.bullets:
-            #     bullet.update()
-            #     bullet.draw(game.screen)
-            #
-            #     if bullet.check_collision(screen_width, screen_height):
-            #         player.bullets.remove(bullet)
 
             game.screen.fill((255, 255, 255))
             player.draw(game_screen)
@@ -261,6 +308,15 @@ if __name__ == "__main__":
 
             pygame.display.flip()
             game.clock.tick(60)
+
+        new_window = pygame.display.set_mode((675, 400))
+        font = pygame.font.Font(None, 36)
+        text = font.render(f'You hit your opponent {game.collisions_count} times, loser', True, (255, 255, 255))
+        new_window.blit(text, (150, 200))
+        pygame.display.flip()
+        time.sleep(3)
+
+        game.quit()
 
     except KeyboardInterrupt:
         game.quit()
